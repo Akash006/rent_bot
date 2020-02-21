@@ -23,7 +23,7 @@ SELECT, RENT, LAST_UNIT, CURRENT_UNIT, MAID, DUSTBIN, WIFI, ADD, SHOW, T_PAID, P
         
 
 def choose(update, context):
-    reply_keyboard = [['Room-1', 'Room-2']]
+    reply_keyboard = [['Room-1', 'Room-2','/cancel']]
     update.message.reply_text(
         'Hi! I will collect the rent from your behalf.\n I will hold a conversation with you. '
         'Choose the room for which you want to collect.\n\n',
@@ -106,8 +106,7 @@ def wifi(update, context):
 
 def add(update, context):
     new_row.append(str(update.message.text))
-    print(new_row)
-    reply_keyboard = [['0'],['/cancel']]
+    reply_keyboard = [['0','/cancel']]
     update.message.reply_text('Enter Additional amount or choose 0 : '
         ,reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     
@@ -123,16 +122,18 @@ def show(update, context):
     header = ['Date','Rent','Last Unit','Current unit','Total unit','Electricity bill',
               'Maid','Dustbin','WiFi','Additional Amt','Last Month Balance','Total Amount',
               'Total Paid', 'Paid By','Balance']
-    update.message.reply_text('{0} : {1}\n{2} : {3}\n\
-{4} :    {5}\n{6} :    {7}\n\
-{8} :    {9}\n{10} :    {11}\n\
-{12} :    {13}\n{14} :    {15}\n\
-{16} :    {17}\n{18} :    {19}\n\
-{20} :    {21}\n{22} :    {23}\n'.format(header[0],new_row[0],header[1],new_row[1],header[2],new_row[2],
-                                                                     header[3],new_row[3],header[4],new_row[4],header[5],new_row[5],
-                                                                     header[6],new_row[6],header[7],new_row[7],header[8],new_row[8],
-                                                                     header[9],new_row[9],header[10],new_row[10],header[11],new_row[11]),
-                                  reply_markup=ReplyKeyboardRemove())
+
+    ss = []
+    for x in range(len(new_row)):
+        data = '*{0}*  :  {1}'.format(header[x],new_row[x])
+        ss.append(data)
+
+    s="\n"
+    #update.message.reply_text(s.join(ss),reply_markup=ReplyKeyboardRemove())
+    context.bot.send_message(chat_id=update.effective_chat.id, 
+                 text=s.join(ss), 
+                 parse_mode=telegram.ParseMode.MARKDOWN)
+    
 
     reply_keyboard = [['Continue','/cancel']]
     update.message.reply_text('Press Continue to Go Ahead',
@@ -141,7 +142,7 @@ def show(update, context):
 
 def t_paid(update, context):
     t_amt = new_row[11]
-    reply_keyboard = [[t_amt],['/cancel']]
+    reply_keyboard = [[t_amt,'/cancel']]
     update.message.reply_text('This is the total amount choose this or Enter whatever is been paid : '
         ,reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
@@ -151,7 +152,7 @@ def t_paid(update, context):
 def by(update, context):
     new_row.append(str(update.message.text))
     
-    reply_keyboard = [['Cash','PhonePe','Google Pay', 'Net Banking']]
+    reply_keyboard = [['Cash','PhonePe'],['Google Pay', 'Net Banking']]
     update.message.reply_text(' Choose the method of payment : '
         ,reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
@@ -161,26 +162,23 @@ def end(update, context):
     new_row.append(str(update.message.text))
     bal = int(new_row[11]) - int(new_row[12])
     new_row.append(str(bal))
-
+    print(new_row)
     #sheet.insert_row(new_row, 2)
     header = ['Date','Rent','Last Unit','Current unit','Total unit','Electricity bill',
               'Maid','Dustbin','WiFi','Additional Amt','Last Month Balance','Total Amount',
               'Total Paid', 'Paid By','Balance']
-    update.message.reply_text('{0} : {1}\n{2} : {3}\n\
-{4} :    {5}\n{6} :    {7}\n\
-{8} :    {9}\n{10} :    {11}\n\
-{12} :    {13}\n{14} :    {15}\n\
-{16} :    {17}\n{18} :    {19}\n\
-{20} :    {21}\n{22} :    {23}\n\
-{24) : {25}\n{26} : {27}\n\
-{28} : {29}'.format(header[0],new_row[0],header[1],new_row[1],header[2],new_row[2],
-                        header[3],new_row[3],header[4],new_row[4],header[5],new_row[5],
-                        header[6],new_row[6],header[7],new_row[7],header[8],new_row[8],
-                        header[9],new_row[9],header[10],new_row[10],header[11],new_row[11],
-                        header[12],new_row[12],header[13],new_row[13],header[14],new_row[14]),
-                        reply_markup=ReplyKeyboardRemove())
-    #context.bot.send_message(chat_id=update.effective_chat.id, text="These are the Entries updates in the google sheet\n [link](https://drive.google.com/open?id=14yCcMjWZajFBKJlwsgufbRGY99QwQKH4emDNywKeoxU)",
-                             #parse_mode=telegram.ParseMode.MARKDOWN)
+    
+    tet=[]
+    for x in range(len(new_row)):
+        data = '*{0}* : {1}'.format(header[x],new_row[x])
+        tet.append(data)
+
+    s="\n"
+    print(s.join(tet))
+    result=s.join(tet)
+    context.bot.send_message(chat_id=update.effective_chat.id,text=s.join(tet))
+    context.bot.send_message(chat_id=update.effective_chat.id, text="These are the Entries updates in this [Google Sheet](https://drive.google.com/open?id=14yCcMjWZajFBKJlwsgufbRGY99QwQKH4emDNywKeoxU)",
+                             parse_mode=telegram.ParseMode.MARKDOWN)
     
     return ConversationHandler.END
     
