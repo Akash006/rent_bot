@@ -54,9 +54,6 @@ def select(update, context):
 def rent(update, context):
     prev_rent = str(row[1])
     reply_keyboard = [[prev_rent],['/cancel']]
-    context.bot.send_message(chat_id=update.effective_chat.id, 
-                 text="*bold* _italic_ `fixed width font` [link](http://google.com).", 
-                 parse_mode=telegram.ParseMode.MARKDOWN)
     update.message.reply_text('Your previous rent was %s \n Press the button or type new amount' % prev_rent
         ,reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
@@ -129,7 +126,6 @@ def show(update, context):
         ss.append(data)
 
     s="\n"
-    #update.message.reply_text(s.join(ss),reply_markup=ReplyKeyboardRemove())
     context.bot.send_message(chat_id=update.effective_chat.id, 
                  text=s.join(ss), 
                  parse_mode=telegram.ParseMode.MARKDOWN)
@@ -163,7 +159,7 @@ def end(update, context):
     bal = int(new_row[11]) - int(new_row[12])
     new_row.append(str(bal))
     print(new_row)
-    #sheet.insert_row(new_row, 2)
+    sheet.insert_row(new_row, 2)
     header = ['Date','Rent','Last Unit','Current unit','Total unit','Electricity bill',
               'Maid','Dustbin','WiFi','Additional Amt','Last Month Balance','Total Amount',
               'Total Paid', 'Paid By','Balance']
