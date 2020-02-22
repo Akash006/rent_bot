@@ -181,7 +181,6 @@ def end(update, context):
 
 def cancel(update, context):
     user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
     update.message.reply_text('Bye! I hope we can talk again some day.',
                               reply_markup=ReplyKeyboardRemove())
 
@@ -233,10 +232,7 @@ def main():
         },
 
         fallbacks=[CommandHandler('cancel', cancel)]
-    )
-
-    ##echo_handler = MessageHandler(Filters.text, echo)
-    #dp.add_handler(echo_handler)    
+    )    
 
     dp.add_handler(conv_handler)
 
