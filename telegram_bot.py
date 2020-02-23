@@ -234,10 +234,10 @@ def main():
         fallbacks=[CommandHandler('cancel', cancel)]
     )    
 
-    dp.add_handler(conv_handler)
+    dp.add_handler(conv_handler,1)
 
     can_handler = CommandHandler('cancel', cancel)
-    dp.add_handler(can_handler)
+    dp.add_handler(can_handler,2)
 
     # log all errors
     dp.add_error_handler(error)
