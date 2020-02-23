@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import logging
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pprint
@@ -16,8 +15,6 @@ client = gspread.authorize(creds)
 new_row = []
 dat = datetime.date.today()
 new_row.append(str(dat))
-
-logger = logging.getLogger(__name__)
 
 CHOOSE,SELECT, RENT, LAST_UNIT, CURRENT_UNIT, MAID, DUSTBIN, WIFI, ADD, SHOW, T_PAID, PAID_BY, END = range(13)
         
@@ -186,11 +183,6 @@ def cancel(update, context):
 
     return ConversationHandler.END
 
-def error(update, context):
-    """Log Errors caused by Updates."""
-    logger.warning('Update "%s" caused error "%s"', update, context.error)
-
-
 def main():
     updater = Updater("634661342:AAEnmZa-BC5MljutbdAjRAlocikd0wTE0RA", use_context=True)
 
@@ -241,9 +233,6 @@ def main():
 
     can_handler = CommandHandler('cancel', cancel)
     dp.add_error_handler(can_handler)
-
-    # log all errors
-    #dp.add_error_handler(error)
 
     # Start the Bot
     updater.start_polling()
