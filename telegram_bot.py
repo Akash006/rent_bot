@@ -19,7 +19,7 @@ new_row.append(str(dat))
 
 logger = logging.getLogger(__name__)
 
-SELECT, RENT, LAST_UNIT, CURRENT_UNIT, MAID, DUSTBIN, WIFI, ADD, SHOW, T_PAID, PAID_BY, END = range(12)
+CHOOSE,SELECT, RENT, LAST_UNIT, CURRENT_UNIT, MAID, DUSTBIN, WIFI, ADD, SHOW, T_PAID, PAID_BY, END = range(13)
         
 
 def choose(update, context):
@@ -201,8 +201,8 @@ def main():
         entry_points=[CommandHandler('start', choose)],
 
         states={
-            SELECT : [MessageHandler(Filters.regex('^(Room-1|Room-2)$'), select),
-                      CommandHandler('cancel', cancel)],
+            SELECT : [CommandHandler('cancel', cancel),
+                      MessageHandler(Filters.regex('^(Room-1|Room-2)$'), select)],
             
             RENT: [MessageHandler(Filters.text, rent),
                    CommandHandler('cancel', cancel)],
