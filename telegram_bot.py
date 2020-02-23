@@ -169,7 +169,7 @@ def end(update, context):
     s="\n"
     print(s.join(tet))
     result=s.join(tet)
-    context.bot.send_message(chat_id=update.effective_chat.id,text=s.join(tet))
+    context.bot.send_message(chat_id=update.effective_chat.id,text=s.join(tet),parse_mode=telegram.ParseMode.MARKDOWN)
     context.bot.send_message(chat_id=update.effective_chat.id, text="These are the Entries updates in this [Google Sheet](https://drive.google.com/open?id=14yCcMjWZajFBKJlwsgufbRGY99QwQKH4emDNywKeoxU)",
                              parse_mode=telegram.ParseMode.MARKDOWN)
     
