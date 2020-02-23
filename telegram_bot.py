@@ -201,8 +201,8 @@ def main():
         entry_points=[CommandHandler('start', choose)],
 
         states={
-            SELECT : [CommandHandler('cancel', cancel),
-                      MessageHandler(Filters.regex('^(Room-1|Room-2)$'), select)],
+            SELECT : [MessageHandler(Filters.regex('^(Room-1|Room-2)$'), select),
+                      CommandHandler('cancel', cancel)],
             
             RENT: [MessageHandler(Filters.text, rent),
                    CommandHandler('cancel', cancel)],
