@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -10,7 +10,7 @@ from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
                           ConversationHandler)
 
 scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('cread_py.json', scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name('/home/mastermindvishu97/rent_bot/cread_py.json', scope)
 client = gspread.authorize(creds)
 new_row = []
 dat = datetime.date.today()
@@ -33,13 +33,12 @@ def select(update, context):
     room = str(update.message.text)
     global sheet, row
     if(room == 'Room-1'):
-        sheet = client.open('test_sp').worksheet("Room1")
+        sheet = client.open('Rent').worksheet("Room1")
         row = sheet.row_values(2)
         context.bot.send_message(chat_id=update.effective_chat.id, text="You have choosen Room-1.",
                                  reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-        #print(row)
     elif(room == 'Room-2'):
-        sheet = client.open('test_sp').worksheet("Room2")
+        sheet = client.open('Rent').worksheet("Room2")
         row = sheet.row_values(2)
         context.bot.send_message(chat_id=update.effective_chat.id, text="You have choosen Room-2.",
                                  reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
@@ -155,7 +154,6 @@ def end(update, context):
     new_row.append(str(update.message.text))
     bal = int(new_row[11]) - int(new_row[12])
     new_row.append(str(bal))
-    print(new_row)
     sheet.insert_row(new_row, 2)
     header = ['Date','Rent','Last Unit','Current unit','Total unit','Electricity bill',
               'Maid','Dustbin','WiFi','Additional Amt','Last Month Balance','Total Amount',
@@ -167,7 +165,6 @@ def end(update, context):
         tet.append(data)
 
     s="\n"
-    print(s.join(tet))
     result=s.join(tet)
     context.bot.send_message(chat_id=update.effective_chat.id,text=s.join(tet),parse_mode=telegram.ParseMode.MARKDOWN)
     context.bot.send_message(chat_id=update.effective_chat.id, text="These are the Entries updates in this [Google Sheet](https://drive.google.com/open?id=14yCcMjWZajFBKJlwsgufbRGY99QwQKH4emDNywKeoxU)",
@@ -184,7 +181,7 @@ def cancel(update, context):
     return ConversationHandler.END
 
 def main():
-    updater = Updater("634661342:AAEnmZa-BC5MljutbdAjRAlocikd0wTE0RA", use_context=True)
+    updater = Updater("1088799942:AAFo4S4kaRbEbczPy_a466KYEUHeyRSi3Eo", use_context=True)
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
