@@ -24,10 +24,11 @@ def down(update, context):
         value = context.user_data[key]
         command = "youtube-dl {} -o video.mp4".format(value)
         pipe = subprocess.Popen(command,stdout=subprocess.PIPE,stderr=subprocess.PIPE,shell=True)
-        print(pipe.stderr.readlines())
-        bot.send_video(chat_id=update.message.chat_id, video=open('video.mp4', 'rb'), supports_streaming=True)
+        if(pipe.stderr.readlines()):
+            raise Exception("This video is download protected.")
+        context.bot.send_video(chat_id=update.message.chat_id, video=open('video.mp4', 'rb'), supports_streaming=True)
         update.message.reply_text('Hope you got your video.')
-        os.remove(video.mp4)
+        os.remove("video.mp4")
     except KeyError:
         update.message.reply_text('Not found')
 
