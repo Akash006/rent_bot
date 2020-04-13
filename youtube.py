@@ -29,8 +29,8 @@ def down(update, context):
         context.bot.send_video(chat_id=update.message.chat_id, video=open('video.mp4', 'rb'), supports_streaming=True)
         update.message.reply_text('Hope you got your video.')
         os.remove("video.mp4")
-    except KeyError:
-        update.message.reply_text('Not found')
+    except Exception as err:
+        update.message.reply_text(err)
 
     context.user_data.clear()
     return ConversationHandler.END
