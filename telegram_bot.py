@@ -1,67 +1,57 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import os
+import logging
 import pprint
 import datetime
 import telegram
+import sys
+from sheets import connection
+from threading import Thread
 from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove)
-from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters,
-                          ConversationHandler)
+from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, ConversationHandler)
 
-scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('/home/mastermindvishu97/rent_bot/cread_py.json', scope)
-client = gspread.authorize(creds)
-new_row = []
-dat = datetime.date.today()
-new_row.append(str(dat))
+global con
 
-CHOOSE,SELECT, RENT, LAST_UNIT, CURRENT_UNIT, MAID, DUSTBIN, WIFI, ADD, SHOW, T_PAID, PAID_BY, END = range(13)
-        
+SELECT, LAST_UNIT, CURRENT_UNIT, MAID, DUSTBIN, WIFI, ADD, SHOW, T_PAID, PAID_BY, END = range(11)
 
 def choose(update, context):
-    reply_keyboard = [['Room-1', 'Room-2','/cancel']]
+    reply_keyboard = [['Room1', 'Room2'],['/cancel']]
     update.message.reply_text(
-        'Hi! I will collect the rent from your behalf.\n I will hold a conversation with you. '
-        'Choose the room for which you want to collect.\n\n',
+        'Hi! I will collect the rent from your behalf.\n\nChoose the Room .\n\n',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
+    log.info("Bot started...")
     return SELECT
 
 def select(update, context):
-    reply_keyboard = [['Continue','/cancel']]
+    global new_row
+    new_row = []
+    dat = datetime.date.today()
+    new_row.append(str(dat.strftime("%d-%b-%y %a")))
     room = str(update.message.text)
-    global sheet, row
-    if(room == 'Room-1'):
-        sheet = client.open('Rent').worksheet("Room1")
-        row = sheet.row_values(2)
-        context.bot.send_message(chat_id=update.effective_chat.id, text="You have choosen Room-1.",
-                                 reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-    elif(room == 'Room-2'):
-        sheet = client.open('Rent').worksheet("Room2")
-        row = sheet.row_values(2)
-        context.bot.send_message(chat_id=update.effective_chat.id, text="You have choosen Room-2.",
-                                 reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-    else:
-        update.message.reply_text(' Choose the method of payment : ')
-        
-    return RENT
-
-def rent(update, context):
-    prev_rent = str(row[1])
+    log.info(f"{room} is choosen.")
+    prev_data(room)
+    prev_rent = str(last_row_data[1])
     reply_keyboard = [[prev_rent],['/cancel']]
-    update.message.reply_text('Your previous rent was %s \n Press the button or type new amount' % prev_rent
+    update.message.reply_text('Your previous rent was %s \n\nEnter the Rent Amount : ' % prev_rent
         ,reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-
     return CURRENT_UNIT
+
+def prev_data(room):
+    global last_row, last_row_data, con
+    con = connection(room)
+    data = con.get_last_row()
+    last_row_data = data[0]
+    last_row = data[1]
+    log.info("Previous data is collected.")
 
 def current(update, context):
     new_row.append(str(update.message.text))
-    new_row.append(str(row[3]))
-    
-    update.message.reply_text('Last month unit : {0}\n\nEnter the current Unit :'.format(row[3]))
+    new_row.append(str(last_row_data[3]))
+    log.info("Collecting current unit")
+    update.message.reply_text('Last month unit : {0}\n\nEnter the current Unit :'.format(str(last_row_data[3])))
     return MAID
-
 
 def maid(update, context):
     new_row.append(str(update.message.text))
@@ -69,30 +59,28 @@ def maid(update, context):
     new_row.append(str(total))
     total_bill = total * 9
     new_row.append(str(total_bill))
-    
-    prev_maid = row[6]
+    prev_maid = last_row_data[6]
     reply_keyboard = [[prev_maid],['/cancel']]
-    update.message.reply_text('Choose previous maid amount or enter new :',
+    update.message.reply_text('Enter the Maid charges :',
                               reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     
     return DUSTBIN
 
-
 def dustbin(update, context):
     new_row.append(str(update.message.text))
-    prev_dust = row[7]
+    prev_dust = last_row_data[7]
     
     reply_keyboard = [[prev_dust],['/cancel']]
-    update.message.reply_text('Choose previous Dustbin amount or enter new : '
+    update.message.reply_text('Enter the Dustbin charges : '
         ,reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     return WIFI
 
 def wifi(update, context):
     new_row.append(str(update.message.text))
-    prev_wifi = row[8]
+    prev_wifi = last_row_data[8]
     
     reply_keyboard = [[prev_wifi],['/cancel']]
-    update.message.reply_text('Choose previous WIFI amount or enter new : '
+    update.message.reply_text('Enter the WiFi charges : '
         ,reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     return ADD
 
@@ -100,15 +88,14 @@ def wifi(update, context):
 def add(update, context):
     new_row.append(str(update.message.text))
     reply_keyboard = [['0','/cancel']]
-    update.message.reply_text('Enter Additional amount or choose 0 : '
+    update.message.reply_text('Enter any Additional amount : '
         ,reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     
     return SHOW
 
-
 def show(update, context):
     new_row.append(str(update.message.text))
-    new_row.append(row[14])
+    new_row.append(last_row_data[14])
     total_amt = int(new_row[1]) + int(new_row[5]) + int(new_row[6]) + int(new_row[7]) + int(new_row[8]) + int(new_row[9]) + int(new_row[10])
     new_row.append(str(total_amt))
     
@@ -118,7 +105,7 @@ def show(update, context):
 
     ss = []
     for x in range(len(new_row)):
-        data = '*{0}*  :  {1}'.format(header[x],new_row[x])
+        data = '*{0}* : {1}'.format(header[x],new_row[x])
         ss.append(data)
 
     s="\n"
@@ -126,7 +113,6 @@ def show(update, context):
                  text=s.join(ss), 
                  parse_mode=telegram.ParseMode.MARKDOWN)
     
-
     reply_keyboard = [['Continue','/cancel']]
     update.message.reply_text('Press Continue to Go Ahead',
                                   reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
@@ -134,18 +120,17 @@ def show(update, context):
 
 def t_paid(update, context):
     t_amt = new_row[11]
-    reply_keyboard = [[t_amt,'/cancel']]
-    update.message.reply_text('This is the total amount choose this or Enter whatever is been paid : '
+    reply_keyboard = [[t_amt],['/cancel']]
+    update.message.reply_text('Total amount paid : '
         ,reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
     return PAID_BY
-
 
 def by(update, context):
     new_row.append(str(update.message.text))
     
     reply_keyboard = [['Cash','PhonePe'],['Google Pay', 'Net Banking']]
-    update.message.reply_text(' Choose the method of payment : '
+    update.message.reply_text(' Choose the payment method : '
         ,reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
     return END
@@ -154,7 +139,8 @@ def end(update, context):
     new_row.append(str(update.message.text))
     bal = int(new_row[11]) - int(new_row[12])
     new_row.append(str(bal))
-    sheet.insert_row(new_row, 2)
+    print(new_row)
+    #sheet.insert_row(new_row, 2)
     header = ['Date','Rent','Last Unit','Current unit','Total unit','Electricity bill',
               'Maid','Dustbin','WiFi','Additional Amt','Last Month Balance','Total Amount',
               'Total Paid', 'Paid By','Balance']
@@ -165,23 +151,42 @@ def end(update, context):
         tet.append(data)
 
     s="\n"
-    result=s.join(tet)
-    context.bot.send_message(chat_id=update.effective_chat.id,text=s.join(tet),parse_mode=telegram.ParseMode.MARKDOWN)
-    context.bot.send_message(chat_id=update.effective_chat.id, text="These are the Entries updates in this [Google Sheet](https://drive.google.com/open?id=14yCcMjWZajFBKJlwsgufbRGY99QwQKH4emDNywKeoxU)",
-                             parse_mode=telegram.ParseMode.MARKDOWN)
-    
+    print(s.join(tet))
+    context.bot.send_message(chat_id=update.effective_chat.id,text=s.join(tet), parse_mode=telegram.ParseMode.MARKDOWN)
+    context.bot.send_message(chat_id=update.effective_chat.id,text="Data added to sheet successfully !!")
+    add_row(new_row)
     return ConversationHandler.END
-    
+
+def add_row(item):
+    con.add_data(last_row + 1, item)
+    log.info("Data added to spreadsheet.")
 
 def cancel(update, context):
     user = update.message.from_user
+    log.info("User %s canceled the conversation.", user.first_name)
     update.message.reply_text('Bye! I hope we can talk again some day.',
                               reply_markup=ReplyKeyboardRemove())
 
     return ConversationHandler.END
 
+def stop_and_restart():
+        # Gracefully stop the Updater and replace the current process with a new one
+        updater.stop()
+        os.execl(sys.executable, sys.executable, *sys.argv)
+    
+def error(update, context):
+    """Log Errors caused by Updates."""
+    log.warning('Update "%s" caused error "%s"', update, context.error)
+    update.message.reply_text('Restarting Bot server....')
+    Thread(target=stop_and_restart).start()
+
+def sheet(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="[Google Sheet](https://drive.google.com/open?id=14yCcMjWZajFBKJlwsgufbRGY99QwQKH4emDNywKeoxU)",
+                             parse_mode=telegram.ParseMode.MARKDOWN)
+
 def main():
-    updater = Updater("1088799942:AAFo4S4kaRbEbczPy_a466KYEUHeyRSi3Eo", use_context=True)
+    global updater
+    updater = Updater("ENTER YOUR TOKEN", use_context=True)
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
@@ -190,46 +195,47 @@ def main():
         entry_points=[CommandHandler('start', choose)],
 
         states={
-            SELECT : [MessageHandler(Filters.regex('^(Room-1|Room-2)$'), select),
-                      CommandHandler('cancel', cancel)],
-            
-            RENT: [MessageHandler(Filters.text, rent),
-                   CommandHandler('cancel', cancel)],
+            SELECT : [CommandHandler('cancel', cancel),
+                        MessageHandler(Filters.regex('^(Room1|Room2)$'), select)],
 
-            CURRENT_UNIT: [MessageHandler(Filters.text, current)],
+            CURRENT_UNIT: [CommandHandler('cancel', cancel),
+                            MessageHandler(Filters.text, current)],
 
-            MAID: [MessageHandler(Filters.text, maid),
-                   CommandHandler('cancel', cancel)],
+            MAID: [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, maid)],
 
-            DUSTBIN: [MessageHandler(Filters.text, dustbin),
-                      CommandHandler('cancel', cancel)],
+            DUSTBIN: [CommandHandler('cancel', cancel),
+                        MessageHandler(Filters.text, dustbin)],
 
-            WIFI: [MessageHandler(Filters.text, wifi),
-                   CommandHandler('cancel', cancel)],
+            WIFI: [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, wifi)],
 
-            ADD: [MessageHandler(Filters.text, add),
-                  CommandHandler('cancel', cancel)],
+            ADD: [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, add)],
 
-            SHOW: [MessageHandler(Filters.text, show)],
+            SHOW: [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, show)],
 
-            T_PAID: [MessageHandler(Filters.text, t_paid)],
+            T_PAID: [CommandHandler('cancel', cancel),
+                        MessageHandler(Filters.text, t_paid)],
 
-            PAID_BY: [MessageHandler(Filters.text, by)],
+            PAID_BY: [CommandHandler('cancel', cancel),
+                        MessageHandler(Filters.text, by)],
 
-            END: [MessageHandler(Filters.text, end)],
+            END: [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, end)]
 
         },
 
         fallbacks=[CommandHandler('cancel', cancel)]
-    )    
+    )  
 
-    dp.add_handler(conv_handler,1)
+    dp.add_handler(conv_handler)
+    dp.add_handler(CommandHandler('sheet', sheet))
+    dp.add_handler(CommandHandler('restart', error))
 
-    can_handler = CommandHandler('cancel', cancel)
-    dp.add_handler(can_handler,2)
-
-    can_handler = CommandHandler('cancel', cancel)
-    dp.add_error_handler(can_handler)
+    # log all errors
+    dp.add_error_handler(error)
 
     # Start the Bot
     updater.start_polling()
@@ -240,5 +246,14 @@ def main():
     updater.idle()
 
 if __name__ == '__main__':
+
+    logging.basicConfig(filename="rentBot.log", level=logging.INFO, format="[%(asctime)-8s] %(levelname)-8s : %(message)s")
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    formatter = logging.Formatter("[%(asctime)-8s] %(levelname)-8s : %(message)s")
+    console.setFormatter(formatter)
+    logging.getLogger().addHandler(console)
+    global log
+    log = logging.getLogger()
     main()
     
