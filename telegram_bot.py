@@ -6,14 +6,13 @@ import pprint
 import datetime
 import telegram
 import sys
-from sheets import connection
+from sheets import Connection
 from threading import Thread
 from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove)
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, ConversationHandler)
 
-global con
-
 SELECT, LAST_UNIT, CURRENT_UNIT, MAID, DUSTBIN, WIFI, ADD, SHOW, T_PAID, PAID_BY, END = range(11)
+L2, L1, L1_2, EXTRA, ADDITIONAL, SHOW_MILK, DEPOSIT, SUBMIT = range(8)
 
 def choose(update, context):
     reply_keyboard = [['Room1', 'Room2'],['/cancel']]
@@ -40,7 +39,7 @@ def select(update, context):
 
 def prev_data(room):
     global last_row, last_row_data, con
-    con = connection(room)
+    con = Connection("Rent Sheet", room)
     data = con.get_last_row()
     last_row_data = data[0]
     last_row = data[1]
@@ -83,7 +82,6 @@ def wifi(update, context):
     update.message.reply_text('Enter the WiFi charges : '
         ,reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     return ADD
-
 
 def add(update, context):
     new_row.append(str(update.message.text))
@@ -177,12 +175,135 @@ def stop_and_restart():
 def error(update, context):
     """Log Errors caused by Updates."""
     log.warning('Update "%s" caused error "%s"', update, context.error)
-    update.message.reply_text('Restarting Bot server....')
+    update.message.reply_text('Restarting bot server....')
     Thread(target=stop_and_restart).start()
 
 def sheet(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text="[Google Sheet](https://drive.google.com/open?id=14yCcMjWZajFBKJlwsgufbRGY99QwQKH4emDNywKeoxU)",
-                             parse_mode=telegram.ParseMode.MARKDOWN)
+    get = update.message.text
+    args = get.split(" ")[1]
+    if args.lower() == 'rent':
+        context.bot.send_message(chat_id=update.effective_chat.id, text="[Rent Sheet]\n\nhttps://docs.google.com/spreadsheets/d/1mcsqntfLwI_vlRrJHJJj9Tfbf7gfH9BzoicR7dYr97I/edit?usp=sharing")
+    elif args.lower() == 'milk':
+        context.bot.send_message(chat_id=update.effective_chat.id, text="[Milk Sheet]\n\nhttps://docs.google.com/spreadsheets/d/1mIICv0ZWB6hM2hbNcC3nEE9bzDlGgCPmP33ubPP65Mg/edit?usp=sharing")
+    else:
+        context.bot.send_message(chat_id=update.effective_chat.id, text="No arguments received.")
+
+def milk_sheet(worksheet):
+    global msheet, msheet_last_row, con
+    con = Connection("Milk", worksheet)
+    data = con.get_last_row()
+    msheet = data[0]
+    msheet_last_row = data[1]
+    log.info("Previous data is collected.")
+
+def milk(update, context):
+    dat = datetime.date.today()
+    milk_sheet(str(dat.strftime("%b")))
+    global milk_data
+    milk_data = []
+    milk_data.append(str(dat.strftime("%d-%b-%y %a")))
+    milk_data.append(msheet[7])
+    reply_keyboard = [['0', '1', '2'],['/cancel']]
+    update.message.reply_text(
+        'Hi! Good morning...mom\n\nEnter the 2L packets :\n\n',
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+
+    log.info("Milk Bot started...")
+    return L2
+
+def L2(update, context):
+    liters2 = int(update.message.text)
+    milk_data.append(liters2)
+    reply_keyboard = [['0', '1', '2', '3'],['/cancel']]
+    update.message.reply_text(
+        f'2 Liters : {liters2} Packets\n\nEnter the 1L packets :\n\n',
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+    return L1
+
+def L1(update, context):
+    liters1 = int(update.message.text)
+    milk_data.append(liters1)
+    reply_keyboard = [['0', '1', '2','3', '4', '5'],['/cancel']]
+    update.message.reply_text(
+        f'1 Liters : {liters1} Packets\n\nEnter the 1/2 L packets :\n\n',
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+
+    return L1_2
+
+def L1_2(update, context):
+    liters1_2 = int(update.message.text)
+    milk_data.append(liters1_2)
+    reply_keyboard = [['0'],['/cancel']]
+    update.message.reply_text(
+        f'1/2 Liters : {liters1_2} Packets\n\nEnter any extra item price ?\n\n',
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+
+    return EXTRA
+
+def extra(update, context):
+    extra = int(update.message.text)
+    milk_data.append(extra)
+    reply_keyboard = [['Deposit', 'Submit'],['/cancel']]
+    update.message.reply_text(
+        f'Extra Item price : {extra} \n\nDeposit money ?\n\n',
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+    
+    return ADDITIONAL
+
+def Additional(update, context):
+    total_milk = (int(milk_data[2])*108) + (int(milk_data[3]*55) + int(milk_data[4]*28))
+    milk_data.append(total_milk)
+    rec = str(update.message.text)
+    if rec == 'Submit':
+        bal = int(milk_data[1]) - total_milk
+        milk_data.append(bal)
+        reply_keyboard = [['Continue'],['/cancel']]
+        update.message.reply_text(
+            f'Press continue to Go Ahead.',
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+        return SHOW_MILK
+    else:
+        reply_keyboard = [['500','1000'],['/cancel']]
+        update.message.reply_text(
+            f'Enter the amount you want to deposit : ',
+            reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+        return DEPOSIT
+
+def deposit(update, context):
+    depo = int(update.message.text)
+    milk_data[1] = int(milk_data[1]) + depo
+    bal = int(milk_data[1]) - int(milk_data[6])
+    milk_data.append(bal)
+    reply_keyboard = [['Continue'],['/cancel']]
+    update.message.reply_text(
+        f'Press continue to Go Ahead.',
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+    return SHOW_MILK
+
+def show_milk(update, context):
+    header = ['Date','Deposit','2 Liter', '1 Liter', '1/2 Liter', 'Extra', 'Total Amount', 'Baclance']
+
+    ss = []
+    for x in range(len(milk_data)):
+        data = '*{0}* : {1}'.format(header[x],milk_data[x])
+        ss.append(data)
+
+    s="\n"
+    context.bot.send_message(chat_id=update.effective_chat.id, 
+                 text=s.join(ss), 
+                 parse_mode=telegram.ParseMode.MARKDOWN)
+    
+    reply_keyboard = [['Continue','/cancel']]
+    update.message.reply_text('Press continue to Go Ahead.',
+        reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+
+    return SUBMIT
+
+def submit(update, context):
+    con.add_data(msheet_last_row + 1, milk_data)
+    update.message.reply_text('Data is added successfully.')
+    log.info("Data added to spreadsheet.")
+    return ConversationHandler.END
 
 def main():
     global updater
@@ -191,8 +312,41 @@ def main():
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
 
+    milk_handler = ConversationHandler(
+        entry_points=[CommandHandler('milk', milk)],
+
+        states={
+            L2 : [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, L2)],
+
+            L1 : [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, L1)],
+
+            L1_2 : [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, L1_2)],
+
+            EXTRA : [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, extra)],
+
+            ADDITIONAL : [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, Additional)],
+
+            SHOW_MILK : [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, show_milk)],
+
+            DEPOSIT : [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, deposit)],
+
+            SUBMIT : [CommandHandler('cancel', cancel),
+                    MessageHandler(Filters.text, submit)],
+
+        },
+
+        fallbacks=[CommandHandler('cancel', cancel)]
+    )
+
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', choose)],
+        entry_points=[CommandHandler('rent', choose)],
 
         states={
             SELECT : [CommandHandler('cancel', cancel),
@@ -231,7 +385,8 @@ def main():
     )  
 
     dp.add_handler(conv_handler)
-    dp.add_handler(CommandHandler('sheet', sheet))
+    dp.add_handler(milk_handler)
+    dp.add_handler(CommandHandler('sheet', sheet, pass_args=True))
     dp.add_handler(CommandHandler('restart', error))
 
     # log all errors
@@ -256,4 +411,3 @@ if __name__ == '__main__':
     global log
     log = logging.getLogger()
     main()
-    
