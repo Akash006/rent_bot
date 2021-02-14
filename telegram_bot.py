@@ -307,7 +307,7 @@ def submit(update, context):
 
 def main():
     global updater
-    updater = Updater("1324554598:AAGmEBRZtgqM0qo4mwAOy_nLx1KmiCZ8jMk", use_context=True)
+    updater = Updater("ENTER YOUR TOKEN", use_context=True)
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
@@ -402,9 +402,9 @@ def main():
 
 if __name__ == '__main__':
 
-    logging.basicConfig(filename="/home/pi/scripts/rent_bot/rentBot.log", level=logging.DEBUG, format="[%(asctime)-8s] %(levelname)-8s : %(message)s")
+    logging.basicConfig(filename="/home/pi/scripts/rent_bot/rentBot.log", level=logging.INFO, format="[%(asctime)-8s] %(levelname)-8s : %(message)s")
     console = logging.StreamHandler()
-    console.setLevel(logging.DEBUG)
+    console.setLevel(logging.INFO)
     formatter = logging.Formatter("[%(asctime)-8s] %(levelname)-8s : %(message)s")
     console.setFormatter(formatter)
     logging.getLogger().addHandler(console)
