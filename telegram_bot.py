@@ -28,12 +28,12 @@ def select(update, context):
     new_row = []
     dat = datetime.date.today()
     new_row.append(str(dat.strftime("%d-%b-%y %a")))
-    room = str(update.message.text)
+    room = update.message.text
     log.info(f"{room} is choosen.")
     prev_data(room)
     prev_rent = str(last_row_data[1])
     reply_keyboard = [[prev_rent],['/cancel']]
-    update.message.reply_text('Your previous rent was %s \n\nEnter the Rent Amount : ' % prev_rent
+    update.message.reply_text('Enter the Rent Amount : {}'.format(prev_rent)
         ,reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     return CURRENT_UNIT
 
@@ -216,7 +216,7 @@ def L2(update, context):
     milk_data.append(liters2)
     reply_keyboard = [['0', '1', '2', '3'],['/cancel']]
     update.message.reply_text(
-        f'2 Liters : {liters2} Packets\n\nEnter the 1L packets :\n\n',
+        f'Enter the 1L packets :\n\n',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     return L1
 
@@ -225,7 +225,7 @@ def L1(update, context):
     milk_data.append(liters1)
     reply_keyboard = [['0', '1', '2','3', '4', '5'],['/cancel']]
     update.message.reply_text(
-        f'1 Liters : {liters1} Packets\n\nEnter the 1/2 L packets :\n\n',
+        f'Enter the 1/2 L packets :\n\n',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
     return L1_2
@@ -235,7 +235,7 @@ def L1_2(update, context):
     milk_data.append(liters1_2)
     reply_keyboard = [['0'],['/cancel']]
     update.message.reply_text(
-        f'1/2 Liters : {liters1_2} Packets\n\nEnter any extra item price ?\n\n',
+        f'Enter any extra item price :\n',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
     return EXTRA
@@ -245,7 +245,7 @@ def extra(update, context):
     milk_data.append(extra)
     reply_keyboard = [['Deposit', 'Submit'],['/cancel']]
     update.message.reply_text(
-        f'Extra Item price : {extra} \n\nDeposit money ?\n\n',
+        f'Want to Deposit money ?\n\n',
         reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     
     return ADDITIONAL
@@ -307,7 +307,7 @@ def submit(update, context):
 
 def main():
     global updater
-    updater = Updater("ENTER YOUR TOKEN", use_context=True)
+    updater = Updater("1324554598:AAGmEBRZtgqM0qo4mwAOy_nLx1KmiCZ8jMk", use_context=True)
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
@@ -402,9 +402,9 @@ def main():
 
 if __name__ == '__main__':
 
-    logging.basicConfig(filename="rentBot.log", level=logging.INFO, format="[%(asctime)-8s] %(levelname)-8s : %(message)s")
+    logging.basicConfig(filename="/home/pi/scripts/rent_bot/rentBot.log", level=logging.DEBUG, format="[%(asctime)-8s] %(levelname)-8s : %(message)s")
     console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
+    console.setLevel(logging.DEBUG)
     formatter = logging.Formatter("[%(asctime)-8s] %(levelname)-8s : %(message)s")
     console.setFormatter(formatter)
     logging.getLogger().addHandler(console)
