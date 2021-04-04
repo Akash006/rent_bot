@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import time
 import os
 import logging
 import pprint
@@ -10,6 +11,8 @@ from sheets import Connection
 from threading import Thread
 from telegram import (ReplyKeyboardMarkup, ReplyKeyboardRemove)
 from telegram.ext import (Updater, CommandHandler, MessageHandler, Filters, ConversationHandler)
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, CallbackContext
 
 SELECT, LAST_UNIT, CURRENT_UNIT, MAID, DUSTBIN, WIFI, ADD, SHOW, T_PAID, PAID_BY, END = range(11)
 L2, L1, L1_2, EXTRA, ADDITIONAL, SHOW_MILK, DEPOSIT, SUBMIT = range(8)
@@ -179,14 +182,33 @@ def error(update, context):
     Thread(target=stop_and_restart).start()
 
 def sheet(update, context):
-    get = update.message.text
-    args = get.split(" ")[1]
-    if args.lower() == 'rent':
-        context.bot.send_message(chat_id=update.effective_chat.id, text="[Rent Sheet]\n\nhttps://docs.google.com/spreadsheets/d/1mcsqntfLwI_vlRrJHJJj9Tfbf7gfH9BzoicR7dYr97I/edit?usp=sharing")
-    elif args.lower() == 'milk':
-        context.bot.send_message(chat_id=update.effective_chat.id, text="[Milk Sheet]\n\nhttps://docs.google.com/spreadsheets/d/1mIICv0ZWB6hM2hbNcC3nEE9bzDlGgCPmP33ubPP65Mg/edit?usp=sharing")
-    else:
-        context.bot.send_message(chat_id=update.effective_chat.id, text="No arguments received.")
+
+    keyboard = [
+        [
+            InlineKeyboardButton("Milk Sheet", callback_data='milk'),
+            InlineKeyboardButton("Rent Sheet", callback_data='rent'),
+        ]
+    ]
+
+    update.message.reply_text('Please choose: ', reply_markup=InlineKeyboardMarkup(keyboard))
+
+    # get = update.message.text
+    # args = get.split(" ")[1]
+    # if args.lower() == 'rent':
+    #     context.bot.send_message(chat_id=update.effective_chat.id, text="[Rent Sheet]\n\nhttps://docs.google.com/spreadsheets/d/1mcsqntfLwI_vlRrJHJJj9Tfbf7gfH9BzoicR7dYr97I/edit?usp=sharing")
+    # elif args.lower() == 'milk':
+    #     context.bot.send_message(chat_id=update.effective_chat.id, text="[Milk Sheet]\n\nhttps://docs.google.com/spreadsheets/d/1mIICv0ZWB6hM2hbNcC3nEE9bzDlGgCPmP33ubPP65Mg/edit?usp=sharing")
+    # else:
+    #     context.bot.send_message(chat_id=update.effective_chat.id, text="No arguments received.")
+
+def button(update: Update, _: CallbackContext) -> None:
+    query = update.callback_query
+    query.answer()
+
+    if query.data == 'milk':
+        query.edit_message_text(text="[Milk Sheet]\n\nhttps://docs.google.com/spreadsheets/d/1mIICv0ZWB6hM2hbNcC3nEE9bzDlGgCPmP33ubPP65Mg/edit?usp=sharing")
+    elif query.data == 'rent':
+        query.edit_message_text(text="[Rent Sheet]\n\nhttps://docs.google.com/spreadsheets/d/1mcsqntfLwI_vlRrJHJJj9Tfbf7gfH9BzoicR7dYr97I/edit?usp=sharing")
 
 def milk_sheet(worksheet):
     global msheet, msheet_last_row, con
@@ -251,7 +273,7 @@ def extra(update, context):
     return ADDITIONAL
 
 def Additional(update, context):
-    total_milk = (int(milk_data[2])*108) + (int(milk_data[3]*55) + int(milk_data[4]*28))
+    total_milk = (int(milk_data[2])*108) + (int(milk_data[3]*55)) + (int(milk_data[4]*28)) + int(milk_data[5])
     milk_data.append(total_milk)
     rec = str(update.message.text)
     if rec == 'Submit':
@@ -307,7 +329,7 @@ def submit(update, context):
 
 def main():
     global updater
-    updater = Updater("ENTER YOUR TOKEN", use_context=True)
+    updater = Updater("1324554598:AAGmEBRZtgqM0qo4mwAOy_nLx1KmiCZ8jMk", use_context=True)
 
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
@@ -386,7 +408,8 @@ def main():
 
     dp.add_handler(conv_handler)
     dp.add_handler(milk_handler)
-    dp.add_handler(CommandHandler('sheet', sheet, pass_args=True))
+    dp.add_handler(CommandHandler('sheet', sheet))
+    dp.add_handler(CallbackQueryHandler(button))
     dp.add_handler(CommandHandler('restart', error))
 
     # log all errors
