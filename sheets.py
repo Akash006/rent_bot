@@ -1,13 +1,13 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-class connection:
+class Connection:
 
-    def __init__(self, room):
+    def __init__(self, sheet, room):
         scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
-        creds = ServiceAccountCredentials.from_json_keyfile_name('cread_py.json', scope)
+        creds = ServiceAccountCredentials.from_json_keyfile_name('/home/pi/scripts/rent_bot/cread_py.json', scope)
         client = gspread.authorize(creds)
-        self.sheet = client.open('test_sp').worksheet(f"{room}")
+        self.sheet = client.open(f"{sheet}").worksheet(f"{room}")
 
     def get_headings(self):
         h_items = self.sheet.row_values(1)

@@ -224,7 +224,7 @@ def milk(update, context):
     global milk_data
     milk_data = []
     milk_data.append(str(dat.strftime("%d-%b-%y %a")))
-    milk_data.append(msheet[7])
+    milk_data.append("0")
     reply_keyboard = [['0', '1', '2'],['/cancel']]
     update.message.reply_text(
         'Hi! Good morning...mom\n\nEnter the 2L packets :\n\n',
@@ -273,11 +273,11 @@ def extra(update, context):
     return ADDITIONAL
 
 def Additional(update, context):
-    total_milk = (int(milk_data[2])*108) + (int(milk_data[3]*55)) + (int(milk_data[4]*28)) + int(milk_data[5])
+    total_milk = (int(milk_data[2])*112) + (int(milk_data[3]*55)) + (int(milk_data[4]*28)) + int(milk_data[5])
     milk_data.append(total_milk)
     rec = str(update.message.text)
     if rec == 'Submit':
-        bal = int(milk_data[1]) - total_milk
+        bal = int(msheet[7]) - total_milk
         milk_data.append(bal)
         reply_keyboard = [['Continue'],['/cancel']]
         update.message.reply_text(
@@ -293,8 +293,8 @@ def Additional(update, context):
 
 def deposit(update, context):
     depo = int(update.message.text)
-    milk_data[1] = int(milk_data[1]) + depo
-    bal = int(milk_data[1]) - int(milk_data[6])
+    milk_data[1] = depo
+    bal = int(msheet[7]) + int(milk_data[1]) - int(milk_data[6])
     milk_data.append(bal)
     reply_keyboard = [['Continue'],['/cancel']]
     update.message.reply_text(
