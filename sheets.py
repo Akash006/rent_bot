@@ -5,7 +5,7 @@ class Connection:
 
     def __init__(self, sheet, room):
         scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
-        creds = ServiceAccountCredentials.from_json_keyfile_name('/home/pi/scripts/rent_bot/cread_py.json', scope)
+        creds = ServiceAccountCredentials.from_json_keyfile_name('/bot/cread_py.json', scope)
         client = gspread.authorize(creds)
         self.sheet = client.open(f"{sheet}").worksheet(f"{room}")
 

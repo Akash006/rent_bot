@@ -425,7 +425,7 @@ def main():
 
 if __name__ == '__main__':
 
-    logging.basicConfig(filename="/home/pi/scripts/rent_bot/rentBot.log", level=logging.INFO, format="[%(asctime)-8s] %(levelname)-8s : %(message)s")
+    logging.basicConfig(filename="/bot/rentBot.log", level=logging.INFO, format="[%(asctime)-8s] %(levelname)-8s : %(message)s")
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     formatter = logging.Formatter("[%(asctime)-8s] %(levelname)-8s : %(message)s")
